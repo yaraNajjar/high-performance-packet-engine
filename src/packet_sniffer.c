@@ -4,6 +4,7 @@
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
 #include <arpa/inet.h>
+#include "../include/packet.h"
 
 void packet_handler(unsigned char *args,
                     const struct pcap_pkthdr *header,
@@ -35,8 +36,10 @@ void packet_handler(unsigned char *args,
 
     printf("Destination IP: %s\n",
        inet_ntoa(*(struct in_addr *)&ip->daddr));
-       
+
     printf("Packet size: %d bytes\n\n", header->len);
+
+    parse_packet(packet);
 }
 
 int main()

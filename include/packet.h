@@ -2,8 +2,11 @@
 #define PACKET_H
 
 #include <stdint.h>
+#include <netinet/if_ether.h>
 
-#define ETHER_ADDR_LEN 6
+#ifndef ETHER_ADDR_LEN
+#define ETHER_ADDR_LEN ETH_ALEN
+#endif
 
 struct ethernet_header {
 
@@ -58,5 +61,7 @@ struct tcp_header {
     uint16_t urgent_pointer;
 
 };
+
+void parse_packet(const unsigned char *packet);
 
 #endif
