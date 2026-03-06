@@ -1,4 +1,4 @@
-Ethernet Frame Structure
+# Ethernet Frame Structure
 
 Destination MAC (6 bytes)
 Source MAC (6 bytes)
