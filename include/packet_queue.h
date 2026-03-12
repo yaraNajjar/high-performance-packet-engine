@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define MAX_QUEUE 1024
+#define MAX_QUEUE 2048
 #define MAX_PACKET_SIZE 65536
 
 typedef struct {

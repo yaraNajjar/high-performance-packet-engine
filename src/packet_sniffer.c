@@ -14,7 +14,7 @@
 #include "../include/packet_queue.h"
 
 #define NUM_WORKERS 4
-#define BATCH_SIZE 10  // Number of packets to process per worker batch
+#define BATCH_SIZE 16  // Number of packets to process per worker batch
 
 /* --------------------------- Global Variables --------------------------- */
 
@@ -107,7 +107,7 @@ void *worker_function(void *arg)
         batch_count = dequeue_batch(&queue, batch, BATCH_SIZE);
 
         if (batch_count == 0) {
-            usleep(1000);
+            usleep(1);
             continue;
         }
 
@@ -124,8 +124,8 @@ void *worker_function(void *arg)
             /* Firewall check */
             if (!check_packet(&my_rules, src_ip)) {
 
-                printf("Worker %d blocked packet from IP: %s\n",
-                       id, inet_ntoa(*(struct in_addr*)&src_ip));
+                //printf("Worker %d blocked packet from IP: %s\n",
+                //       id, inet_ntoa(*(struct in_addr*)&src_ip));
 
                 blocked_packets++;
                 packets_last_second++;
@@ -228,11 +228,9 @@ int main(int argc, char *argv[])
     while (time(NULL) - test_start < 60) {
 
         if (benchmark_mode){
-            printf("Old system running...\n");
             pcap_dispatch(handle, 10, packet_handler_old, NULL);
         }else{
-            printf("New system running...\n");
-            pcap_dispatch(handle, 10, packet_handler, NULL);
+            pcap_dispatch(handle, 100, packet_handler, NULL);
         }
     }
 

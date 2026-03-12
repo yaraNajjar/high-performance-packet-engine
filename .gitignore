@@ -1,2 +1,5 @@
 src/packet_sniffer
 src/packet_parser
+packet_sniffer
+*.o
+*.log

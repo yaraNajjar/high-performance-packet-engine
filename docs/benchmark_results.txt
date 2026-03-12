@@ -1,0 +1,11 @@
+
+=== Benchmark Results ===
+System: OLD (single-thread processing)
+Total packets captured: 37385
+Average PPS: 623
+=== Benchmark Results ===
+System: NEW (queue + workers + batching)
+Total packets processed: 37863
+Allowed packets: 29841
+Blocked packets: 8022
+Average PPS: 631
