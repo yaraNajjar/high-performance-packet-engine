@@ -2,14 +2,14 @@
 --- OLD System Benchmark ---
 === Benchmark Results ===
 System: OLD (single-thread processing)
-Total packets captured: 28268
-Average PPS: 471
+Total packets captured: 27883
+Average PPS: 464
 
 --- NEW System Benchmark ---
 === Benchmark Results ===
 System: NEW (queue + workers + batching)
-Total packets processed: 83368
-Allowed packets: 58583
-Blocked packets: 24785
-Average PPS: 1389
+Total packets processed: 101341
+Allowed packets: 69796
+Blocked packets: 31545
+Average PPS: 1689
 

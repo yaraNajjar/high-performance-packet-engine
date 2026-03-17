@@ -15,6 +15,8 @@ The system captures packets using **libpcap**,  processes them through a **multi
 - **Packets-per-second (PPS) benchmarking**
 - **Real-time statistics monitoring**
 - **Real-time packet latency measurement** (microseconds per packet)
+- Optimized packet processing by pinning worker threads to specific **CPU cores (CPU affinity)** to reduce context switching and improve deterministic performance.
+- Introduced a **Network Interface Layer** to initialize network devices, capture packets, and send statistics, simulating a driver/embedded architecture.
 
 ## Technologies
 
@@ -27,15 +29,20 @@ The system captures packets using **libpcap**,  processes them through a **multi
 ## Project Structure
 ```bash
 src/
+    network_interface.cpp
     packet_sniffer.c
     parser.c
     packet_queue.c
     rules.c
 
 include/
+    network_interface.h
     packet.h
     packet_queue.h
     rules.h
+
+scripts/
+    run_benchmark.sh
 
 docs/
     benchmark_results.txt
@@ -45,7 +52,7 @@ docs/
 
 Compile the project using:
 ```bash
-gcc src/packet_sniffer.c src/parser.c src/rules.c src/packet_queue.c -o packet_sniffer -lpcap -lpthread
+g++ src/network_interface.cpp src/packet_sniffer.c src/parser.c src/rules.c src/packet_queue.c -o packet_sniffer -lpcap -lpthread
 ```
 
 ## Run

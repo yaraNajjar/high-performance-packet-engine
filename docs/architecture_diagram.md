@@ -1,9 +1,11 @@
 # Packet Processing Architecture
 
+This architecture simulates a layered networking system similar to real-world packet processing engines, separating the network interface layer from the processing pipeline.
+
 ```mermaid
 flowchart TD
 
-A[Network Interface / NIC] --> B[Packet Capture<br>libpcap]
+A[Network Interface / NIC] --> B[Network Interface Layer<br>init + capture + stats]
 
 B --> C[Packet Handler]
 
@@ -27,5 +29,5 @@ K --> L[Protocol Analysis]
 
 L --> M[Statistics Collector]
 
-M --> N[Monitoring Thread<br>Packets per second & Latency]
+M --> N[Monitoring Thread<br>PPS & Latency]
 ```

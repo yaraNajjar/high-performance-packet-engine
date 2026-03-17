@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,7 +15,9 @@
 #include "../include/packet.h"
 #include "../include/rules.h"
 #include "../include/packet_queue.h"
+#include "../include/network_interface.h"
 
+/* --------------------------- Constants --------------------------- */
 #define NUM_WORKERS 4
 #define BATCH_SIZE 64  // Number of packets to process per worker batch
 
@@ -37,9 +41,9 @@ typedef struct {
     char padding[60];
 } counter_t;
 
-counter_t allowed_packets = {0};
-counter_t blocked_packets = {0};
-counter_t packets_last_second = {0};
+counter_t allowed_packets = {0,{0}};
+counter_t blocked_packets = {0,{0}};
+counter_t packets_last_second = {0,{0}};
 
 /* Packets per second counter */
 int total_packets = 0;
@@ -55,12 +59,17 @@ long latency_min = 1000000000;
 long latency_max = 0;
 long latency_count = 0;
 
+volatile int running = 1;
+
 /* --------------------------- Packet Handler (NEW SYSTEM) --------------------------- */
 /* Capture -> Queue -> Worker threads */
 void packet_handler(unsigned char *args,
                     const struct pcap_pkthdr *header,
                     const unsigned char *packet)
 {
+    (void)args;
+    (void)header;
+
     packet_t pkt;
 
     /* Copy packet into reusable buffer */
@@ -90,6 +99,9 @@ void packet_handler_old(unsigned char *args,
                         const struct pcap_pkthdr *header,
                         const unsigned char *packet)
 {
+    (void)args;
+    (void)header;
+
     total_packets_old++;
 
     struct ethhdr *eth = (struct ethhdr *)packet;
@@ -118,10 +130,27 @@ void *worker_function(void *arg)
     int id = *(int*)arg;
     free(arg);
 
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+
+    int cpu = id % NUM_WORKERS;
+
+    CPU_SET(cpu, &cpuset);
+
+    if (pthread_setaffinity_np(
+            pthread_self(),
+            sizeof(cpu_set_t),
+            &cpuset) != 0)
+    {
+        perror("pthread_setaffinity_np");
+    }
+
+    printf("Worker %d pinned to CPU %d\n", id, cpu);
+
     packet_t batch[BATCH_SIZE];
     int batch_count;
 
-    while (1) {
+    while (running) {
 
         batch_count = dequeue_batch(&queue, batch, BATCH_SIZE);
 
@@ -208,6 +237,7 @@ void *worker_function(void *arg)
 /* Prints statistics every second */
 void *monitor_function(void *arg)
 {
+    (void)arg;
     while (1) {
 
         sleep(1);
@@ -245,11 +275,9 @@ void *monitor_function(void *arg)
 
 int main(int argc, char *argv[])
 {
-    queue_init(&queue);
 
-    pcap_t *handle;
-    char errbuf[PCAP_ERRBUF_SIZE];
-    char *dev = "eth0";
+    queue_init(&queue);
+    const char *dev = "eth0";
 
     /* Detect benchmark mode */
     if (argc > 1 && strcmp(argv[1], "old") == 0) {
@@ -259,10 +287,7 @@ int main(int argc, char *argv[])
         printf("Running NEW system benchmark\n");
     }
 
-    /* Open network device */
-    handle = pcap_open_live(dev, 65536, 1, 1000, errbuf);
-    if (handle == NULL) {
-        printf("Could not open device %s\n", dev);
+    if (network_interface_init(dev) != 0) {
         return 1;
     }
 
@@ -275,7 +300,7 @@ int main(int argc, char *argv[])
     if (!benchmark_mode) {
 
         for (int i = 0; i < NUM_WORKERS; i++) {
-            int *id = malloc(sizeof(int));
+            int *id = (int*)malloc(sizeof(int));
             *id = i;
 
             pthread_create(&workers[i], NULL, worker_function, id);
@@ -294,15 +319,16 @@ int main(int argc, char *argv[])
     while (time(NULL) - test_start < 60) {
 
         if (benchmark_mode){
-            pcap_dispatch(handle, 10, packet_handler_old, NULL);
+            network_capture_packet(10, packet_handler_old);
         }else{
-            pcap_dispatch(handle, 100, packet_handler, NULL);
+            network_capture_packet(100, packet_handler);
         }
     }
 
     printf("\n=== Benchmark Results ===\n");
 
     int duration = 60; // test duration in seconds
+    running = 0;
 
     if (benchmark_mode) {
 
@@ -320,7 +346,7 @@ int main(int argc, char *argv[])
         printf("Blocked packets: %d\n", blocked_packets.value);
         printf("Average PPS: %d\n", total_new / duration);
     }
-    pcap_close(handle);
+    network_interface_close();
 
     return 0;
 }

@@ -1,4 +1,7 @@
 # Project Architecture
+
+This architecture separates hardware/network interface access from packet processing, simulating a real-world driver layer in an embedded system.
+
 See the architecture diagram:
 ```bash
 docs/architecture_diagram.md
@@ -15,11 +18,14 @@ docs/architecture_diagram.md
 The packet flow:
 
 ```bash
-Network Interface
+Network Interface / NIC
         │
         ▼
-   Packet Capture
-     (libpcap)
+Network Interface Layer
+  (initialize + capture + send stats)
+        │
+        ▼
+   Packet Handler
         │
         ▼
    Lock-Free Ring Buffer
@@ -40,20 +46,35 @@ Network Interface
  ```
 
 ## System Components
-Packet Capture
+### Network Interface Layer
+
+File:
+```bash
+src/network_interface.cpp
+```
+* Initializes network interface for packet capture.
+
+* Handles low-level interaction with NIC.
+
+* Sends captured packets to the packet handler.
+
+* Provides statistics on captured packets.
+
+* Simulates a driver/embedded layer, separating hardware access from processing engine.
+
+### Packet Capture
 
 File:
 ```bash
 src/packet_sniffer.c
 ```
-* Captures packets from the network interface using ```libpcap```.
+* Receives packets from the Network Interface Layer.
 
 * Copies packets into internal buffers.
 
-* Sends packets to the **lock-free ring buffer**.
+* Sends packets to the **lock-free ring buffer** for worker threads.
 
-
-## Packet Queue
+### Packet Queue
 
 File:
 ```bash
@@ -167,12 +188,14 @@ Results show **packets-per-second (PPS)** for both systems.
 ## File Map
 ```bash
 src/
+ network_interface.cpp  -> driver-like layer: NIC initialization, capture, stats
  packet_sniffer.c   -> main capture engine & latency measurement
  parser.c           -> advanced parser integrated with queue + workers
  packet_queue.c     -> lock-free ring buffer
  rules.c            -> firewall rules
  packet_parser.c      -> standalone raw socket TCP/IP packet sniffer
 include/
+ network_interface.h
  packet.h
  packet_queue.h
  rules.h
