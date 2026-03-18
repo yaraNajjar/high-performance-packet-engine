@@ -80,9 +80,10 @@ sudo ./packet_sniffer old
 
 The benchmark compares two architectures:
 
-**System**	| **Architecture**
-OLD	        | Single-thread packet processing
-NEW	        | Queue + Worker Threads + Batch Processing
+| **System** | **Architecture** |
+|------------|------------------|
+| OLD        | Single-thread packet processing |
+| NEW        | Queue + Worker Threads + Batch Processing |
 
 Example output:
 
